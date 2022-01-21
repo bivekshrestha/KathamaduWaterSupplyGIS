@@ -1,0 +1,217 @@
+<template>
+  <validation-observer
+      ref="observer"
+      v-slot="{ handleSubmit }"
+  >
+    <form @submit.prevent="handleSubmit(submit)">
+      <div class="row">
+        <div class="col-12 mb-3">
+          <validation-provider
+              v-slot="{ errors, pristine }"
+              name="layer name"
+              rules="required"
+          >
+            <label for="layer-name" class="form-label">Layer Name</label>
+            <input
+                type="text"
+                class="form-control"
+                :class="{ 'is-invalid' : errors[0], 'is-valid' : (!errors[0] && !pristine) }"
+                id="layer-name"
+                v-model="form.Layer_Name"
+                placeholder="Layer Name"
+            >
+            <div class="invalid-feedback">
+              {{ errors[0] }}
+            </div>
+          </validation-provider>
+        </div>
+
+        <div class="col-12 mb-3">
+          <validation-provider
+              v-slot="{ errors, pristine, validate }"
+              name="document"
+              rules="required"
+          >
+            <label for="document" class="form-label">Document</label>
+            <input
+                type="file"
+                ref="file"
+                class="form-control"
+                :class="{ 'is-invalid' : errors[0], 'is-valid' : (!errors[0] && !pristine) }"
+                id="document"
+                @input="validate"
+                @change="processFile"
+            >
+            <div class="invalid-feedback">
+              {{ errors[0] }}
+            </div>
+          </validation-provider>
+        </div>
+
+        <div class="col-12 mb-3">
+          <validation-provider
+              v-slot="{ errors, pristine }"
+              name="description"
+              rules=""
+          >
+            <label for="description" class="form-label">Description</label>
+            <textarea
+                type="text"
+                class="form-control"
+                :class="{ 'is-invalid' : errors[0], 'is-valid' : (!errors[0] && !pristine) }"
+                id="description"
+                v-model="form.Description"
+            ></textarea>
+            <div class="invalid-feedback">
+              {{ errors[0] }}
+            </div>
+          </validation-provider>
+        </div>
+
+        <div class="col-12 mb-3">
+          <validation-provider
+              v-slot="{ errors, pristine }"
+              name="keywords"
+              rules=""
+          >
+            <label for="keywords" class="form-label">Keywords</label>
+            <input
+                type="text"
+                class="form-control"
+                :class="{ 'is-invalid' : errors[0], 'is-valid' : (!errors[0] && !pristine) }"
+                id="keywords"
+                v-model="form.keywords"
+                placeholder="Keywords"
+            >
+            <div class="invalid-feedback">
+              {{ errors[0] }}
+            </div>
+          </validation-provider>
+        </div>
+
+        <div class="col-12 mb-3">
+          <validation-provider
+              v-slot="{ errors, pristine }"
+              name="File Type"
+              rules="required"
+          >
+            <label class="form-label">File Type</label>
+            <v-select
+                :class="{ 'is-invalid' : errors[0], 'is-valid' : (!errors[0] && !pristine) }"
+                v-model="form.File_Type"
+                :options="options.fileTypes"
+                label="Filetype"
+                :reduce="item => item.Filetype"
+            ></v-select>
+            <div class="invalid-feedback">
+              {{ errors[0] }}
+            </div>
+          </validation-provider>
+        </div>
+
+        <div class="col-12 mb-3">
+          <validation-provider
+              v-slot="{ errors, pristine }"
+              name="Category"
+              rules="required"
+          >
+            <label class="form-label">Category</label>
+            <v-select
+                :class="{ 'is-invalid' : errors[0], 'is-valid' : (!errors[0] && !pristine) }"
+                v-model="form.Category"
+                :options="options.categories"
+                label="Category"
+                :reduce="item => item.Category"
+            ></v-select>
+            <div class="invalid-feedback">
+              {{ errors[0] }}
+            </div>
+          </validation-provider>
+        </div>
+
+      </div>
+      <button type="submit" class="btn btn-primary px-5">Save</button>
+    </form>
+  </validation-observer>
+</template>
+
+<script>
+export default {
+  name: "LayersForm",
+  data() {
+    return {
+      loading: true,
+      options: {
+        fileTypes: [],
+        categories: []
+      },
+      form: {
+        Layer_Name: '',
+        document: '',
+        description: '',
+        keywords: '',
+        File_Type: '',
+        Category: ''
+      }
+    }
+  },
+  mounted() {
+    this.loading = false
+    this.getData()
+  },
+  methods: {
+    getData() {
+      this.$repository.category.all()
+          .then(response => {
+            this.options.categories = response.data.results;
+          })
+
+      this.$repository.fileType.all()
+          .then(response => {
+            this.options.fileTypes = response.data.results;
+          })
+    },
+    processFile() {
+      this.form.document = this.$refs.file.files[0]
+    },
+    resetForm(){
+      this.$refs.file.value = null;
+      this.form = {
+        Layer_Name: '',
+        document: '',
+        description: '',
+        keywords: '',
+        File_Type: '',
+        Category: ''
+      }
+      this.$refs.observer.reset();
+    },
+    submit() {
+      let data = new FormData;
+
+      for (let formKey in this.form) {
+        data.append(formKey, this.form[formKey])
+      }
+
+      this.$repository.document.create(data)
+          .then(() => {
+            this.$toast.success('Layers Added')
+            this.resetForm();
+            this.$emit('created');
+          })
+          .catch(error => {
+            if(error.response.status === 401){
+              this.$toast.warning('You are not authorized. Please login and try again.')
+            }
+          })
+          .finally(() => {
+            this.loading = false
+          })
+    }
+  }
+}
+</script>
+
+<style scoped>
+
+</style>
