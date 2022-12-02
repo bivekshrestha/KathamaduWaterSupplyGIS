@@ -1,4 +1,8 @@
 
+## Project Description
+---
+A GIS project to map watersupply point in Kathmandu Valley.
+
 ## Project setup
 ```
 npm install
